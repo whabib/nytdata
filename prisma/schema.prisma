@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Article {
+  id           Int      @id @default(autoincrement())
+  url          String   @unique
+  section      String
+  subsection   String?
+  title        String?
+  share_count  Int?     @default(0)
+  date_created DateTime @default(now())
+  authors      Author[]
+}
+
+model Author {
+  id           Int       @id @default(autoincrement())
+  name         String    @unique
+  bsky_label   Boolean   @default(false)
+  must_read    Boolean   @default(false)
+  date_created DateTime  @default(now())
+  articles     Article[]
+}
