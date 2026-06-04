@@ -1,0 +1,11 @@
+# Ignore node_modules to ensure native binaries (like Prisma) are built for Linux
+node_modules/
+
+# Exclude environment files to prevent leaking secrets
+.env
+.env.*
+
+# Ignore git and Docker-related files
+.git
+Dockerfile
+.dockerignore
