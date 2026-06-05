@@ -35,7 +35,7 @@ async function syncTopStories() {
     'technology', 'theater', 't-magazine', 'travel', 'upshot', 'us', 'world'
   ];
 
-  let totalInsertedCount = 0;
+  let totalProcessedCount = 0;
 
   for (const currentSection of sections) {
     console.log(`Fetching top stories for section: ${currentSection}...`);
@@ -63,28 +63,30 @@ async function syncTopStories() {
       const { url, section, subsection, title, byline } = story;
       const authors = parseByline(byline);
 
-      try {
-        await prisma.article.create({
-          data: {
-            url,
-            section,
-            subsection,
-            title,
-            authors: {
-              connectOrCreate: authors.map((name) => ({
-                where: { name },
-                create: { name },
-              })),
-            },
-          },
-        });
-        totalInsertedCount++;
-      } catch (e) {
-        // Prisma error code P2002 means unique constraint failed (article already exists)
-        if (e.code !== 'P2002') {
-          throw e;
-        }
-      }
+      const authorOps = {
+        connectOrCreate: authors.map((name) => ({
+          where: { name },
+          create: { name },
+        })),
+      };
+
+      await prisma.article.upsert({
+        where: { url },
+        create: {
+          url,
+          section,
+          subsection,
+          title,
+          authors: authorOps,
+        },
+        update: {
+          section,
+          subsection,
+          title,
+          authors: authorOps,
+        },
+      });
+      totalProcessedCount++;
     }
 
     // NYT API limits free tiers to 5 requests per minute (1 request every 15 seconds).
@@ -92,7 +94,7 @@ async function syncTopStories() {
     await delay(15000);
   }
   
-  console.log(`Successfully synced NYT data. Inserted ${totalInsertedCount} new articles.`);
+  console.log(`Successfully synced NYT data. Processed ${totalProcessedCount} articles across all sections.`);
 }
 
 async function run() {
